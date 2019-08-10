@@ -56,7 +56,7 @@ if [[ $MAGIC == "OPPOENCRYPT!" ]]; then
     exit
 fi
 
-if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|payload.bin\|image.*.zip\|update.zip\|.*rawprogram*\|system.sin" | grep -v ".*chunk.*\.so$") ]]; then
+if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|payload.bin\|image.*.zip\|update.zip\|.*rawprogram*\|system.sin\|system.*.bin" | grep -v ".*chunk.*\.so$") ]]; then
     echo "BRUH: This type of firmwares not supported"
     cd "$LOCALDIR"
     rm -rf "$tmpdir" "$outdir"
@@ -234,6 +234,14 @@ elif [[ $(7z l -ba $romzip | grep "update.zip") ]]; then
     7z e $romzip update.zip -r
     "$LOCALDIR/extractor.sh" update.zip "$outdir"
     exit
+elif [[ $(7z l -ba $romzip | grep "system.*.bin") ]]; then
+    echo "Update bin firmware detected"
+    7z x -y $romzip -o"$tmpdir"
+    bin_list=`find "$tmpdir" -type f -name "*.bin" -printf '%P\n' | sort`
+    for file in $bin_list; do
+        DIR_NAME=$(echo $file | cut -d . -f1)
+        7z x -y "$tmpdir/$file" -o"$outdir/$DIR_NAME"
+    done
 fi
 
 for partition in $PARTITIONS; do
