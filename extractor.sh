@@ -143,11 +143,12 @@ elif [[ $(7z l -ba $romzip | grep "system.sin") ]]; then
 elif [[ $(7z l -ba $romzip | grep "system-p") ]]; then
     echo "P suffix images detected"
     for partition in $PARTITIONS; do
-        foundpartitions=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition-p)
-        7z e -y $romzip $foundpartitions dummypartition 2>/dev/null >> $tmpdir/zip.log
-        if [ ! -z $foundpartitions ]; then
-            mv $(ls $partition-p*) "$partition.img"
-        fi
+        7z e -y $romzip $partition-p* 2>/dev/null >> $tmpdir/zip.log
+    done
+    bin_list=`find "$tmpdir" -type f -name "*.bin" -printf '%P\n' | sort`
+    for file in $bin_list; do
+        NEW_NAME=$(echo $file | sed "s|-p.*|.img|g")
+        mv "$tmpdir/$file" "$outdir/$NEW_NAME"
     done
 elif [[ $(7z l -ba $romzip | grep "system_new.img\|system.img") ]]; then
     echo "Image detected"
