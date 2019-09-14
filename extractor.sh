@@ -215,7 +215,7 @@ elif [[ $(7z l -ba $romzip | grep rawprogram) ]]; then
                 if [[ -f "$partition.raw.img" ]]; then
                     mv "$partition.raw.img" "$partition.img"
                 else
-                    rawprogramsfile=$(grep -rlw $partition rawprogram*)
+                    rawprogramsfile=$(grep -rlw $partition rawprogram*.xml)
                     $packsparseimg -t $partition -x $rawprogramsfile > $tmpdir/extract.log
                     mv "$partition.raw" "$partition.img"
                 fi
