@@ -35,6 +35,7 @@ payload_extractor="$toolsdir/update_payload_extractor/extract.py"
 sdat2img="$toolsdir/sdat2img.py"
 ozipdecrypt="$toolsdir/oppo_ozip_decrypt/ozipdecrypt.py"
 lpunpack="$toolsdir/$HOST/bin/lpunpack"
+pacextractor="$toolsdir/$HOST/bin/pacextractor"
 
 romzip="$(realpath $1)"
 PARTITIONS="system vendor cust odm oem factory product xrom modem dtbo boot tz systemex"
@@ -60,7 +61,7 @@ if [[ $MAGIC == "OPPOENCRYPT!" ]]; then
     exit
 fi
 
-if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|payload.bin\|image.*.zip\|update.zip\|.*rawprogram*\|system.sin\|system-p\|super" | grep -v ".*chunk.*\.so$") ]]; then
+if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|payload.bin\|image.*.zip\|update.zip\|.*rawprogram*\|system.sin\|system-p\|super\|.*.pac" | grep -v ".*chunk.*\.so$") ]]; then
     echo "BRUH: This type of firmwares not supported"
     cd "$LOCALDIR"
     rm -rf "$tmpdir" "$outdir"
@@ -140,6 +141,14 @@ elif [[ $(7z l -ba $romzip | grep "system.sin") ]]; then
     ext4_list=`find $tmpdir/ -type f -printf '%P\n' | sort`
     for file in $ext4_list; do
         mv $tmpdir/$file $(echo "$outdir/$file" | sed -r 's|ext4|img|g')
+    done
+elif [[ $(7z l -ba $romzip | grep ".*.pac") ]]; then
+    echo "pac detected"
+    cd $tmpdir
+    7z e -y $romzip "*.pac" 2>/dev/null >> $tmpdir/zip.log
+    pac_list=`find $tmpdir/ -type f -printf '%P\n' | sort`
+    for file in $pac_list; do
+       $pacextractor $file
     done
 elif [[ $(7z l -ba $romzip | grep "system-p") ]]; then
     echo "P suffix images detected"
