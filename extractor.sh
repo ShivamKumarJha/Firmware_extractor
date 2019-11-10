@@ -145,8 +145,9 @@ elif [[ $(7z l -ba $romzip | grep "system.sin") ]]; then
 elif [[ $(7z l -ba $romzip | grep ".*.pac") ]]; then
     echo "pac detected"
     cd $tmpdir
-    7z e -y $romzip "*.pac" 2>/dev/null >> $tmpdir/zip.log
-    pac_list=`find $tmpdir/ -type f -printf '%P\n' | sort`
+    foundpac=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep ".*.pac")
+    7z e -y $romzip $foundpac dummypartition 2>/dev/null >> $tmpdir/zip.log
+    pac_list=`find $tmpdir/ -type f -name "*.pac" -printf '%P\n' | sort`
     for file in $pac_list; do
        $pacextractor $file
     done
