@@ -273,11 +273,12 @@ elif [[ $(7z l -ba $romzip | grep payload.bin) ]]; then
     exit
 elif [[ $(7z l -ba $romzip | grep "image.*.zip\|update.zip") ]]; then
     echo "Image zip firmware detected"
-    thezip=$(7z l -ba $romzip | grep "image.*.zip\|update.zip" | rev | gawk '{ print $1 }' | rev)
-    7z e -y $romzip $thezip 2>/dev/null >> $tmpdir/zip.log
-    thezipfile=$(echo $thezip | rev | cut -d "/" -f 1 | rev)
-    mv $thezipfile temp.zip
-    "$LOCALDIR/extractor.sh" temp.zip "$outdir"
+    mkdir -p $tmpdir/zipfiles
+    7z e -y $romzip -o$tmpdir/zipfiles 2>/dev/null >> $tmpdir/zip.log
+    zip_list=`find $tmpdir/zipfiles -type f -name "*.zip" -printf '%P\n' | sort`
+    for file in $zip_list; do
+       "$LOCALDIR/extractor.sh" $tmpdir/zipfiles/$file "$outdir"
+    done
     exit
 fi
 
