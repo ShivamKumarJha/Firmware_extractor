@@ -161,7 +161,7 @@ elif [[ $(7z l -ba $romzip | grep "system-p") ]]; then
         NEW_NAME=$(echo $file | sed "s|-p.*|.img|g")
         mv "$tmpdir/$file" "$outdir/$NEW_NAME"
     done
-elif [[ $(7z l -ba $romzip | gawk '{print $NF}' | grep "system_new.img\|^system.img") ]]; then
+elif [[ $(7z l -ba $romzip | gawk '{print $NF}' | grep "system_new.img\|^system.img\|\/system.img") ]]; then
     echo "Image detected"
     for partition in $PARTITIONS; do
         foundpartitions=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition.img)
