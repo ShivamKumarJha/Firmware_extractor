@@ -38,6 +38,7 @@ lpunpack="$toolsdir/$HOST/bin/lpunpack"
 pacextractor="$toolsdir/$HOST/bin/pacextractor"
 
 romzip="$(realpath $1)"
+romzipext=${romzip##*.}
 PARTITIONS="system vendor cust odm oem factory product xrom modem dtbo boot tz systemex"
 EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex"
 OTHERPARTITIONS="tz.mbn:tz tz.img:tz modem.img:modem NON-HLOS:modem boot-verified.img:boot dtbo-verified.img:dtbo"
@@ -53,7 +54,7 @@ mkdir -p "$outdir"
 cd $tmpdir
 
 MAGIC=$(head -c12 $romzip | tr -d '\0')
-if [[ $MAGIC == "OPPOENCRYPT!" ]]; then
+if [[ $MAGIC == "OPPOENCRYPT!" ]] || [[ "$romzipext" == "ozip" ]]; then
     echo "ozip detected"
     cp $romzip "$tmpdir/temp.ozip"
     python $ozipdecrypt "$tmpdir/temp.ozip"
