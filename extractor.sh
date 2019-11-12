@@ -58,6 +58,9 @@ if [[ $MAGIC == "OPPOENCRYPT!" ]] || [[ "$romzipext" == "ozip" ]]; then
     echo "ozip detected"
     cp $romzip "$tmpdir/temp.ozip"
     python $ozipdecrypt "$tmpdir/temp.ozip"
+    if [[ -d "$tmpdir/out" ]]; then
+        7z a -r "$tmpdir/temp.zip" "$tmpdir/out/*"
+    fi
     "$LOCALDIR/extractor.sh" "$tmpdir/temp.zip" "$outdir"
     exit
 fi
