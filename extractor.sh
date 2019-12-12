@@ -122,6 +122,25 @@ if [[ $(7z l -ba $romzip | grep system.new.dat) ]]; then
             rm -rf $line.transfer.list $line.new.dat
         done
     done
+elif [[ $(7z l -ba $romzip | grep rawprogram) ]]; then
+    echo "QFIL detected"
+    rawprograms=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep rawprogram)
+    7z e -y $romzip $rawprograms 2>/dev/null >> $tmpdir/zip.log
+    for partition in $PARTITIONS; do
+        partitionsonzip=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition)
+        if [[ ! $partitionsonzip == "" ]]; then
+            7z e -y $romzip $partitionsonzip 2>/dev/null >> $tmpdir/zip.log
+            if [[ ! -f "$partition.img" ]]; then
+                if [[ -f "$partition.raw.img" ]]; then
+                    mv "$partition.raw.img" "$partition.img"
+                else
+                    rawprogramsfile=$(grep -rlw $partition rawprogram*.xml)
+                    $packsparseimg -t $partition -x $rawprogramsfile > $tmpdir/extract.log
+                    mv "$partition.raw" "$partition.img"
+                fi
+            fi
+        fi
+    done
 elif [[ $(7z l -ba $romzip | grep system | grep chunk | grep -v ".*\.so$") ]]; then
     echo "chunk detected"
     for partition in $PARTITIONS; do
@@ -269,25 +288,6 @@ elif [[ $(7z l -ba $romzip | grep tar.md5 | rev | gawk '{ print $1 }' | rev | gr
         exit 1
     fi
     romzip=""
-elif [[ $(7z l -ba $romzip | grep rawprogram) ]]; then
-    echo "QFIL detected"
-    rawprograms=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep rawprogram)
-    7z e -y $romzip $rawprograms 2>/dev/null >> $tmpdir/zip.log
-    for partition in $PARTITIONS; do
-        partitionsonzip=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition)
-        if [[ ! $partitionsonzip == "" ]]; then
-            7z e -y $romzip $partitionsonzip 2>/dev/null >> $tmpdir/zip.log
-            if [[ ! -f "$partition.img" ]]; then
-                if [[ -f "$partition.raw.img" ]]; then
-                    mv "$partition.raw.img" "$partition.img"
-                else
-                    rawprogramsfile=$(grep -rlw $partition rawprogram*.xml)
-                    $packsparseimg -t $partition -x $rawprogramsfile > $tmpdir/extract.log
-                    mv "$partition.raw" "$partition.img"
-                fi
-            fi
-        fi
-    done
 elif [[ $(7z l -ba $romzip | grep payload.bin) ]]; then
     echo "AB OTA detected"
     7z e -y $romzip payload.bin 2>/dev/null >> $tmpdir/zip.log
