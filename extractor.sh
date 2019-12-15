@@ -15,6 +15,7 @@
 # bin images
 # pac
 # sign images
+# nb0
 
 usage() {
     echo "Usage: $0 <Path to firmware> [Output Dir]"
@@ -42,6 +43,7 @@ sdat2img="$toolsdir/sdat2img.py"
 ozipdecrypt="$toolsdir/oppo_ozip_decrypt/ozipdecrypt.py"
 lpunpack="$toolsdir/$HOST/bin/lpunpack"
 pacextractor="$toolsdir/$HOST/bin/pacextractor"
+nb0_extract="$toolsdir/$HOST/bin/nb0-extract"
 
 romzip="$(realpath $1)"
 romzipext=${romzip##*.}
@@ -71,7 +73,7 @@ if [[ $MAGIC == "OPPOENCRYPT!" ]] || [[ "$romzipext" == "ozip" ]]; then
     exit
 fi
 
-if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac" | grep -v ".*chunk.*\.so$") ]]; then
+if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0" | grep -v ".*chunk.*\.so$") ]]; then
     echo "BRUH: This type of firmwares not supported"
     cd "$LOCALDIR"
     rm -rf "$tmpdir" "$outdir"
@@ -141,6 +143,17 @@ elif [[ $(7z l -ba $romzip | grep rawprogram) ]]; then
             fi
         fi
     done
+elif [[ $(7z l -ba $romzip | grep nb0) ]]; then
+    echo "nb0 detected"
+    to_extract=`7z l $romzip | grep ".*.nb0" | gawk '{ print $6 }'`
+    echo $to_extract
+    7z e -y $romzip $to_extract 2>/dev/null >> $tmpdir/zip.log
+    $nb0_extract $to_extract $tmpdir
+    for partition in $PARTITIONS; do
+        part=`ls -l | grep ".*$partition.img" | gawk '{ print $9 }'`
+        mv $part $partition.img
+    done
+    romzip=""
 elif [[ $(7z l -ba $romzip | grep system | grep chunk | grep -v ".*\.so$") ]]; then
     echo "chunk detected"
     for partition in $PARTITIONS; do
