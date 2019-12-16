@@ -49,6 +49,7 @@ nb0_extract="$toolsdir/$HOST/bin/nb0-extract"
 kdz_extract="$toolsdir/KDZFileTools.py"
 dz_extract="$toolsdir/undz.py"
 ruu="$toolsdir/$HOST/bin/RUU_Decrypt_Tool"
+splituapp="$toolsdir/splituapp"
 
 romzip="$(realpath $1)"
 romzipext=${romzip##*.}
@@ -100,7 +101,7 @@ if [[ $(echo $romzip | grep -i ruu_ | grep -i exe) ]]; then
     exit 0
 fi
 
-if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0" | grep -v ".*chunk.*\.so$") ]]; then
+if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0\|UPDATE.APP" | grep -v ".*chunk.*\.so$") ]]; then
     echo "BRUH: This type of firmwares not supported"
     cd "$LOCALDIR"
     rm -rf "$tmpdir" "$outdir"
@@ -357,6 +358,27 @@ elif [[ $(7z l -ba $romzip | grep ".*.rar\|.*.zip") ]]; then
        "$LOCALDIR/extractor.sh" $tmpdir/zipfiles/$file "$outdir"
     done
     exit
+elif [[ $(7z l -ba $romzip | grep "UPDATE.APP") ]]; then
+    echo "Huawei UPDATE.APP detected"
+    7z x $romzip UPDATE.APP
+    $splituapp -f "UPDATE.APP" -l super || (
+    for partition in $PARTITIONS; do
+        $splituapp -f "UPDATE.APP" -l ${partition/.img/} || echo "$partition not found in UPDATE.APP"
+    done)
+    if [ -f super.img ]; then
+        ($simg2img super.img super.img.raw || mv super.img super.img.raw) 2>/dev/null
+
+        for partition in $PARTITIONS; do
+            ($lpunpack --partition="$partition"_a super.img.raw || $lpunpack --partition="$partition" super.img.raw) 2>/dev/null
+            if [ -f "$partition"_a.img ]; then
+                mv "$partition"_a.img "$partition".img
+            else
+                foundpartitions=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition.img)
+                7z e -y $romzip $foundpartitions dummypartition 2>/dev/null >> $tmpdir/zip.log
+            fi
+        done
+        rm -rf super.img.raw
+    fi
 fi
 
 for partition in $PARTITIONS; do
