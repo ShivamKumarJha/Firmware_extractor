@@ -126,7 +126,7 @@ if [[ $(echo $romzip | grep kdz) ]]; then
     exit 0
 fi
 
-if [[ $(echo $romzip | grep -i ruu_ | grep -i exe) ]]; then
+if [[ $(echo $romzip | grep -i ruu_ ) ]]; then
     echo "RUU detected"
     cp $romzip $tmpdir
     romzip="$tmpdir/$(basename $romzip)"
