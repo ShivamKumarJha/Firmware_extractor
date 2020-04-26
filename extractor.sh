@@ -140,7 +140,7 @@ if [[ $(echo $romzip | grep -i ruu_ ) ]]; then
     exit 0
 fi
 
-if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0\|UPDATE.APP" | grep -v ".*chunk.*\.so$") ]]; then
+if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system_full.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0\|UPDATE.APP" | grep -v ".*chunk.*\.so$") ]]; then
     echo "BRUH: This type of firmwares not supported"
     cd "$LOCALDIR"
     rm -rf "$tmpdir" "$outdir"
@@ -242,17 +242,19 @@ elif [[ $(7z l -ba $romzip | grep system | grep chunk | grep -v ".*\.so$") ]]; t
             fi
         fi
     done
-elif [[ $(7z l -ba $romzip | gawk '{print $NF}' | grep "system_new.img\|^system.img\|\/system.img\|\/system_image.emmc.img\|^system_image.emmc.img") ]]; then
+elif [[ $(7z l -ba $romzip | gawk '{print $NF}' | grep "system_new.img\|system_full.img\|^system.img\|\/system.img\|\/system_image.emmc.img\|^system_image.emmc.img") ]]; then
     echo "Image detected"
     7z x -y $romzip 2>/dev/null >> $tmpdir/zip.log
     find $tmpdir/ -name "* *" -type d,f | rename 's/ /_/g' > /dev/null 2>&1 # removes space from file name
     find $tmpdir/ -mindepth 2 -type f -name "*_image.emmc.img" -exec mv {} . \; # move .img in sub-dir to $tmpdir
     find $tmpdir/ -mindepth 2 -type f -name "*_new.img" -exec mv {} . \; # move .img in sub-dir to $tmpdir
+    find $tmpdir/ -mindepth 2 -type f -name "*_full.img" -exec mv {} . \; # move .img in sub-dir to $tmpdir
     find $tmpdir/ -mindepth 2 -type f -name "*.img.ext4" -exec mv {} . \; # move .img in sub-dir to $tmpdir
     find $tmpdir/ -mindepth 2 -type f -name "*.img" -exec mv {} . \; # move .img in sub-dir to $tmpdir
     find $tmpdir/ -type f ! -name "*img*" -exec rm -rf {} \; # delete other files
     find "$tmpdir" -maxdepth 1 -type f -name "*_image.emmc.img" | rename 's/_image.emmc.img/.img/g' > /dev/null 2>&1 # proper .img names
     find "$tmpdir" -maxdepth 1 -type f -name "*_new.img" | rename 's/_new.img/.img/g' > /dev/null 2>&1 # proper .img names
+    find "$tmpdir" -maxdepth 1 -type f -name "*_full.img" | rename 's/_full.img/.img/g' > /dev/null 2>&1 # proper .img names
     find "$tmpdir" -maxdepth 1 -type f -name "*.img.ext4" | rename 's/.img.ext4/.img/g' > /dev/null 2>&1 # proper .img names
     romzip=""
 elif [[ $(7z l -ba $romzip | grep "system.sin\|.*system_.*\.sin") ]]; then
