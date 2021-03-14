@@ -88,8 +88,8 @@ splituapp="$toolsdir/splituapp"
 
 romzip="$(realpath $1)"
 romzipext=${romzip##*.}
-PARTITIONS="system vendor cust odm oem factory product xrom modem dtbo boot tz systemex oppo_product preload_common system_ext system_other opproduct reserve india"
-EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex oppo_product preload_common"
+PARTITIONS="system vendor cust odm oem factory product xrom modem dtbo boot tz systemex oppo_product preload_common system_ext system_other opproduct reserve india my_product"
+EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex oppo_product preload_common my_product"
 OTHERPARTITIONS="tz.mbn:tz tz.img:tz modem.img:modem NON-HLOS:modem boot-verified.img:boot dtbo-verified.img:dtbo"
 
 echo "Create Temp and out dir"
