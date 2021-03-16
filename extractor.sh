@@ -210,6 +210,16 @@ if [[ $(7z l -ba $romzip | grep system.new.dat) ]]; then
             rm -rf $line.transfer.list $line.new.dat
         done
     done
+elif [[ $(7z l -ba $romzip | grep "super.img") ]]; then
+    echo "super detected"
+    foundsupers=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep "super.img")
+    7z e -y $romzip $foundsupers dummypartition 2>/dev/null >> $tmpdir/zip.log
+    superchunk=$(ls | grep chunk | grep super | sort)
+    if [[ $(echo "$superchunk" | grep "sparsechunk") ]]; then
+        $simg2img $(echo "$superchunk" | tr '\n' ' ') super.img.raw 2>/dev/null
+        rm -rf *super*chunk*
+    fi
+    superimage
 elif [[ $(7z l -ba $romzip | grep rawprogram) ]]; then
     echo "QFIL detected"
     rawprograms=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep rawprogram)
@@ -351,16 +361,6 @@ elif [[ $(7z l -ba $romzip | grep "system-sign.img") ]]; then
         fi
     done
     romzip=""
-elif [[ $(7z l -ba $romzip | grep "super.img") ]]; then
-    echo "super detected"
-    foundsupers=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep "super.img")
-    7z e -y $romzip $foundsupers dummypartition 2>/dev/null >> $tmpdir/zip.log
-    superchunk=$(ls | grep chunk | grep super | sort)
-    if [[ $(echo "$superchunk" | grep "sparsechunk") ]]; then
-        $simg2img $(echo "$superchunk" | tr '\n' ' ') super.img.raw 2>/dev/null
-        rm -rf *super*chunk*
-    fi
-    superimage
 elif [[ $(7z l -ba $romzip | grep .tar) && ! $(7z l -ba $romzip | grep tar.md5 | rev | gawk '{ print $1 }' | rev | grep AP_) ]]; then
     tar=$(7z l -ba $romzip | grep .tar | rev | gawk '{ print $1 }' | rev)
     echo "non AP tar detected"
