@@ -27,26 +27,6 @@ if [ $(uname) == Darwin ]; then
     alias grep=ggrep
     alias find=gfind
 fi
-    
-superimage() {
-    if [ -f super.img ]; then
-        echo "Creating super.img.raw ..."
-        $simg2img super.img super.img.raw 2>/dev/null
-    fi
-    if [[ ! -s super.img.raw ]] && [ -f super.img ]; then
-        mv super.img super.img.raw
-    fi
-    for partition in $PARTITIONS; do
-        ($lpunpack --partition="$partition"_a super.img.raw || $lpunpack --partition="$partition" super.img.raw) 2>/dev/null
-        if [ -f "$partition"_a.img ]; then
-            mv "$partition"_a.img "$partition".img
-        else
-            foundpartitions=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition.img)
-            7z e -y $romzip $foundpartitions dummypartition 2>/dev/null >> $tmpdir/zip.log
-        fi
-    done
-    rm -rf super.img.raw
-}
 
 usage() {
     echo "Usage: $0 <Path to firmware> [Output Dir]"
@@ -74,10 +54,8 @@ else
 fi
 if [[ ! -d "$toolsdir/oppo_ozip_decrypt" ]]; then
     git clone -q https://github.com/bkerler/oppo_ozip_decrypt.git "$toolsdir/oppo_ozip_decrypt"
-    git -C "$toolsdir/oppo_ozip_decrypt" reset -q --hard d02128dade8fffaf16e00f9f7d01f7be39558f69
 else
     git -C "$toolsdir/oppo_ozip_decrypt" pull
-    git -C "$toolsdir/oppo_ozip_decrypt" reset -q --hard d02128dade8fffaf16e00f9f7d01f7be39558f69
 fi
 if [[ ! -d "$toolsdir/update_payload_extractor" ]]; then
     git clone -q https://github.com/erfanoabdi/update_payload_extractor.git "$toolsdir/update_payload_extractor"
@@ -114,6 +92,26 @@ tmpdir="$outdir/tmp"
 mkdir -p "$tmpdir"
 mkdir -p "$outdir"
 cd $tmpdir
+
+superimage() {
+    if [ -f super.img ]; then
+        echo "Creating super.img.raw ..."
+        $simg2img super.img super.img.raw 2>/dev/null
+    fi
+    if [[ ! -s super.img.raw ]] && [ -f super.img ]; then
+        mv super.img super.img.raw
+    fi
+    for partition in $PARTITIONS; do
+        ($lpunpack --partition="$partition"_a super.img.raw || $lpunpack --partition="$partition" super.img.raw) 2>/dev/null
+        if [ -f "$partition"_a.img ]; then
+            mv "$partition"_a.img "$partition".img
+        else
+            foundpartitions=$(7z l -ba $romzip | rev | gawk '{ print $1 }' | rev | grep $partition.img)
+            7z e -y $romzip $foundpartitions dummypartition 2>/dev/null >> $tmpdir/zip.log
+        fi
+    done
+    rm -rf super.img.raw
+}
 
 MAGIC=$(head -c12 $romzip | tr -d '\0')
 if [[ $MAGIC == "OPPOENCRYPT!" ]] || [[ "$romzipext" == "ozip" ]]; then
@@ -157,10 +155,28 @@ if [[ $(echo $romzip | grep -i ruu_ ) ]]; then
 fi
 
 if [[ ! $(7z l -ba $romzip | grep ".*system.ext4.tar.*\|.*.tar\|.*chunk\|system\/build.prop\|system.new.dat\|system_new.img\|system.img\|system-sign.img\|system_full.img\|system.bin\|payload.bin\|.*.zip\|.*.rar\|.*rawprogram*\|system.sin\|.*system_.*\.sin\|system-p\|super\|.*.pac\|.*.nb0\|UPDATE.APP" | grep -v ".*chunk.*\.so$") ]]; then
-    echo "BRUH: This type of firmwares not supported"
+    if [[ ${romzipext} == "gz" ]]; then
+        echo "Repacking gz file"
+        tar -zvxf $romzip -C $tmpdir > /dev/null 2>&1
+        7z a -r "$tmpdir/temp.zip" "$tmpdir/*"
+    elif [[ ${romzipext} == "tar" ]]; then
+        echo "Repacking tar file"
+        tar -xvf $romzip -C $tmpdir > /dev/null 2>&1
+        7z a -r "$tmpdir/temp.zip" "$tmpdir/*"
+    elif [[ ${romzipext} == "tbz2" ]]; then
+        echo "Repacking tbz2 file"
+        tar -jvxf $romzip -C $tmpdir > /dev/null 2>&1
+        7z a -r "$tmpdir/temp.zip" "$tmpdir/*"
+    else
+        echo "BRUH: This type of firmwares not supported"
+        cd "$LOCALDIR"
+        rm -rf "$outdir"
+        exit 1
+    fi
+    [[ -e "$tmpdir/temp.zip" ]] && "$LOCALDIR/extractor.sh" "$tmpdir/temp.zip" "$outdir"
     cd "$LOCALDIR"
-    rm -rf "$tmpdir" "$outdir"
-    exit 1
+    rm -rf "$tmpdir"
+    exit
 fi
 
 echo "Extracting firmware on: $outdir"
